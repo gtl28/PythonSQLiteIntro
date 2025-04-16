@@ -171,16 +171,112 @@ VALUES
 
 cursor = conn.cursor()
 
-for tableName in tableNames:
-    query = "SELECT * FROM " + tableName
+def printTable(name):
+    query = "SELECT * FROM " + name
     cursor.execute(query)
     rows = [list(row) for row in cursor.fetchall()]
     headings = [descriptions[0] for descriptions in cursor.description]
     table = [headings] + rows
-    print2dArray(table, tableName)
+    print2dArray(table, name)
     
+
+
+runApplication = True
+
+def select_option(option_type, options, return_type):
+    print("Please select a " + option_type)
+    print("Your options are: ")
+    for i in range(1, len(options)+1):
+        print("Option " + str(i) + " : " + options[i-1])
+    option_selected = False
+    while not option_selected:
+        option_index = input("\nSelect " + option_type + " : ")
+        if option_index in [str(x) for x in range(1, len(options)+1)]:
+            print("Option " + option_index + " : " + options[int(option_index) - 1] + " Selected\n")
+            if return_type == "index":
+                return int(option_index)
+            if return_type == "element":
+                return options[int(option_index) - 1]
+        else:
+            print("Option selection is not valid. Please try again.\n")
+
+
+# Creation
+def add_item(table_name):
+    fields = []
+    query = "PRAGMA table_info(" + tableName + ")"
+    cursor.execute(query)
+    fields = [x[1] for x in cursor.fetchall()]
+    print("The " + table_name + " Table has the following fields: ")
+    for field in fields:
+        print(field)
+    print("\n")
+
+    select_option()
+    #keep it simple as and just select row from each fields
+# Creation
+def add_pilot():
+    print("Pilot Added")
+
+# Read
+def view_flight():
+    print("Flight Viewed")
+
+# Read
+def view_pilot_schedule():
+    print("Pilot Schedule Viewed")
+
+# Read
+def view_table():
+    tableSelected = select_option("Table", tableNames, "element")
+    printTable(tableSelected)
+
+# Update
+def update_flight():
+    print("Flight Updated")
+
+# Update
+def update_destination():
+    print("Destination Information Updated")
+
+# Deletion
+def remove_pilot():
+    print("Pilot Removed")
+
+# Deletion
+def remove_flight():
+    print("Flight")
+
+print("Welcome to the Flight Management Database Application.")
+print("The database has been reset and filled with example data.")
+print("You many perform various CRUD operation on this data using the actions available in the Actions Menu")
+
+actions = ["(Create) Add a new flight", "(Create) Add a new pilot", "(Read) View flight information", "(Read) View pilot schedule", "(Read) View table", "(Update) Update flight information", "(Update) Update destination information", "(Delete) Remove pilot", "(Delete) Remove flight"]
+tables = []
+
+while runApplication:
+    print("\n-----------------------------------------")
+    menuChoice = select_option("Action", actions, "index")
+    
+    match menuChoice:
+        case 1:
+            add_item("Flight")
+        case 2:
+            add_pilot()
+        case 3:
+            view_flight()
+        case 4:
+            view_pilot_schedule
+        case 5:
+            view_table()
+        case 6:
+            update_flight()
+        case 7:
+            update_destination()
+        case 8:
+            remove_pilot()
+        case 9:
+            remove_flight()
+
 cursor.close()
 conn.close()
-
-
-print("Table created successfully")
