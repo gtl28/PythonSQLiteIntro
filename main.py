@@ -203,21 +203,22 @@ def select_option(option_type, options, return_type):
 
 
 # Creation
-def get_fields(table_name):
+def get_fields(table_name, print):
     fields = []
     query = "PRAGMA table_info(" + tableName + ")"
     cursor.execute(query)
     fields = [x[1] for x in cursor.fetchall()]
-    print("The " + table_name + " Table has the following fields: ")
-    for field in fields:
-        print(field)
-    print("\n")
+    if print:
+        print("The " + table_name + " Table has the following fields: ")
+        for field in fields:
+            print(field)
+        print("\n")
     return fields
     #keep it simple as and just select row from each fields
 
 # Creation
 def add_item_to_table(tableName):
-    fields = get_fields(tableName)[1:]
+    fields = get_fields(tableName, True)[1:]
     item = []
 
     for field in fields:
@@ -238,7 +239,7 @@ def add_item_to_table(tableName):
 def add_flight():
     tableName = "Flight"
 
-    fields = get_fields(tableName)[1:]
+    fields = get_fields(tableName, True)[1:]
     item = []
 
     for field in fields:
@@ -271,18 +272,103 @@ def add_flight():
     print("The updated Flight table is below.")
     printTable("Flight")
 
+def get_integer(message):
+    done = False
+    while not done:
+        result = input(message)
+        if result.isdigit():
+            done = True
+            return result
+        else:
+            print("Input is not valid. Input must be an intger. Please Try Again")
+            
+
 # Creation
 def add_pilot():
+    print("The current Pilot table is below.")
+    printTable("Pilot")
+    pilot_name = input("Please enter the new pilot's full name : ")
+    pilot_age = get_integer("Please select the new pilot's age : ")
+    pilot_experience = get_integer("Please slect the new pilot's flight time experience in hours : ")
+    query = "INSERT INTO Pilot (Pilot_Name, Pilot_Age, Flight_Experience) VALUES ('" + pilot_name + "', " + pilot_age + ", " + pilot_experience + ")"
+    cursor.execute(query)
+    print("The updated Pilot table is below.")
+    printTable("Pilot")
     print("Pilot added")
 
 # Read
 def view_flight():
-
+    fields = get_fields("Flight", False)[1:]
+    print("You may select flight by a range of fields:")
+    print("Please select the field you wish to filter flights by")
+    chosenField = select_option("Field", fields, "element")
     print("Flight Viewed")
+    print("Please select the " + chosenField + " value of the Flights you wish to view")
+    tableName = ""
+    match chosenField:
+        case "Origin_Airport_ID":
+            
+            tableName = "Airport"
+        case "Destination_Airport_ID":
+            tableName = "Airport"
+        case "Departure_Schedule_ID":
+            tableName = "Schedule" 
+        case "Arrival_Schedule_ID":
+            tableName = "Schedule"
+        case "Pilot_ID": 
+            tableName = "Pilot"
+        case "Plane_ID":
+            tableName = "Plane"
+    printTable(tableName)
+    query = "SELECT " + tableName + "_ID FROM " + tableName
+    cursor.execute(query)
+    options = [row[0] for row in cursor.fetchall()]
+    choice = select_option(chosenField, options, "element")
+     
+    print("Here are the flights with " + chosenField + " equal to " + choice)
+
+    query = "SELECT * FROM Flight WHERE " + chosenField + " = " + choice
+    cursor.execute(query)
+    rows = [list(row) for row in cursor.fetchall()]
+    headings = [descriptions[0] for descriptions in cursor.description]
+    table = [headings] + rows
+    print2dArray(table, "Flights with " + chosenField + " equal to " + choice)
+
 
 # Read
 def view_pilot_schedule():
-    print("Pilot Schedule Viewed")
+    print("This is the current Pilot table")
+    printTable("Pilot")
+    print("Please select the Pilot ID of the Pilot whose schedule you want to view")
+    query = "SELECT DISTINCT Pilot_ID FROM Pilot"
+    cursor.execute(query)
+    options = [row[0] for row in cursor.fetchall()]
+    chosen_pilot = select_option("Pilot ID", options, "element")
+    query = "SELECT DISTINCT Arrival_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
+    cursor.execute(query)
+    schedule_ids = [row[0] for row in cursor.fetchall()]
+    print("Here all the Arrival Schedules of the Pilot with Pilot ID = " + chosen_pilot)
+    for id in schedule_ids:
+        query = "SELECT * FROM Schedule WHERE Schedule_ID = " + str(id)
+        cursor.execute(query)
+        rows = [list(row) for row in cursor.fetchall()]
+        headings = [descriptions[0] for descriptions in cursor.description]
+        table = [headings] + rows
+        print2dArray(table, "Pilot Flight Arrival Schedule " + str(id))
+
+    query = "SELECT DISTINCT Departure_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
+    cursor.execute(query)
+    schedule_ids = [row[0] for row in cursor.fetchall()]
+    print("Here all the Departure Schedules of the Pilot with Pilot ID = " + chosen_pilot)
+    for id in schedule_ids:
+        query = "SELECT * FROM Schedule WHERE Schedule_ID = " + str(id)
+        cursor.execute(query)
+        rows = [list(row) for row in cursor.fetchall()]
+        headings = [descriptions[0] for descriptions in cursor.description]
+        table = [headings] + rows
+        print2dArray(table, "Pilot Flight Departure Schedule " + str(id))
+
+    
 
 # Read
 def view_table():
@@ -290,8 +376,35 @@ def view_table():
     printTable(tableSelected)
 
 # Update
-def update_flight():
-    print("Flight Updated")
+def update_pilot():
+    print("This is the current Pilot table")
+    printTable("Pilot")
+
+    print("Please select the Pilot ID of the Pilot you wish to update")
+    query = "SELECT DISTINCT Pilot_ID FROM Pilot"
+    cursor.execute(query)
+    options = [row[0] for row in cursor.fetchall()]
+    id = select_option("Pilot ID", options, "element")
+
+    print("Please select the field of the pilot you wish to update")
+    fields = get_fields("Pilot", False)[1:]
+    chosenField = select_option("Pilot field", fields, "element")
+
+    print("Please enter the " + chosenField + " value that you to set")
+    value = ""
+    match chosenField:
+        case "Pilot_Name":
+            value = input("Please enter the new pilot's full name : ")
+        case "Pilot_Age":
+            value = get_integer("Please select the new pilot's age : ")
+        case "value":
+            pilot_experience = get_integer("Please slect the new pilot's flight time experience in hours : ")
+    query = "UPDATE Pilot SET " + chosenField + " = " + value + " WHERE Pilot_ID = " + id
+
+    print("This is the updated Pilot table")
+    printTable("Pilot")
+
+    print("Pilot Updated")
 
 # Update
 def update_destination():
@@ -341,7 +454,7 @@ print("You many perform various CRUD operation on this data using the actions av
 
 
 
-actions = ["(Create) Add a new flight", "(Create) Add a new pilot", "(Read) View flight information", "(Read) View pilot schedule", "(Read) View table", "(Update) Update flight information", "(Update) Update destination information", "(Delete) Remove pilot", "(Delete) Remove flight", "(View) View all tables"]
+actions = ["(Create) Add a new flight", "(Create) Add a new pilot", "(Read) View flight information", "(Read) View pilot schedule", "(Read) View table", "(Update) Update Pilot information", "(Delete) Remove pilot", "(Delete) Remove flight", "(View) View all tables"]
 tables = []
 
 while runApplication:
@@ -350,25 +463,23 @@ while runApplication:
     
     match menuChoice:
         case 1:
-            add_flight()
+            add_flight() #done
         case 2:
-            add_pilot()
+            add_pilot() # done
         case 3:
-            view_flight()
+            view_flight() # done
         case 4:
-            view_pilot_schedule
+            view_pilot_schedule() #done
         case 5:
-            view_table()
+            view_table() #done
         case 6:
-            update_flight()
-        case 7:
-            update_destination()
+            update_pilot() #done
         case 8:
-            remove_pilot()
+            remove_pilot() #done
         case 9:
-            remove_flight()
+            remove_flight() #done
         case 10:
-            view_all_tables()
+            view_all_tables() #done
 
 cursor.close()
 conn.close()
