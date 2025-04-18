@@ -1,7 +1,9 @@
 import sqlite3
 
+# The names of the tables in the database
 tableNames = ["Airport", "Pilot", "Plane", "Schedule", "Flight"]
 
+# Function used to print a table with the column spacing alligned
 def print2dArray(array, name):
     print("\n" + name + " Table:")
 
@@ -169,8 +171,10 @@ VALUES
     (10, 7, 7, 2, 4, 9);
 """)
 
+# Create cursor
 cursor = conn.cursor()
 
+# Function to print a table from the database
 def printTable(name):
     query = "SELECT * FROM " + name
     cursor.execute(query)
@@ -179,10 +183,8 @@ def printTable(name):
     table = [headings] + rows
     print2dArray(table, name)
     
-
-
-runApplication = True
-
+# Function to get user to select one of the options from the options list of type option_type. 
+# Return type is used to decide if the chosen option itself is returned or the index of it
 def select_option(option_type, options, return_type):
     print("Please select a " + option_type + " Option Number")
     print("Your options are: ")
@@ -202,46 +204,29 @@ def select_option(option_type, options, return_type):
             print("Option selection is not valid. Please try again.\n")
 
 
-# Creation
-def get_fields(table_name, print):
-    fields = []
-    query = "PRAGMA table_info(" + tableName + ")"
+# Get the column headers from a table
+# If do_print is True then the headers will be printed out
+def get_fields(table_name, do_print):
+    headers = []
+    query = "PRAGMA table_info(" + table_name + ")"
     cursor.execute(query)
-    fields = [x[1] for x in cursor.fetchall()]
-    if print:
+    headers = [x[1] for x in cursor.fetchall()]
+    if do_print:
         print("The " + table_name + " Table has the following fields: ")
-        for field in fields:
-            print(field)
+        for header in headers:
+            print(header)
         print("\n")
-    return fields
-    #keep it simple as and just select row from each fields
+    return headers
 
-# Creation
-def add_item_to_table(tableName):
-    fields = get_fields(tableName, True)[1:]
-    item = []
-
-    for field in fields:
-        query = "SELECT DISTINCT " + field + " FROM " + tableName
-        cursor.execute(query)
-        options = [row[0] for row in cursor.fetchall()]
-        choice = select_option(field, options, "element")
-        item.append(choice)
-
-    print("Item to Add: " + str(item))
-    fields_string = ", ".join(fields)
-    item_values = ", ".join(item)
-    query = "INSERT INTO " + tableName + " (" + fields_string + ") VALUES (" + item_values + ")"
-    cursor.execute(query)
-    print("Item added to " + tableName)
-
-# Creation
+# Add a flight to the Flight Table
 def add_flight():
     tableName = "Flight"
 
+    # Get Flight Table fields
     fields = get_fields(tableName, True)[1:]
     item = []
 
+    # Get a choice of for each field
     for field in fields:
         print(field)
         query = "SELECT DISTINCT " + field + " FROM " + tableName
@@ -263,15 +248,19 @@ def add_flight():
         choice = select_option(field, options, "element")
         item.append(choice)
 
+    # Add new flight to flight table
     print("Item to Add: " + str(item))
     fields_string = ", ".join(fields)
     item_values = ", ".join(item)
     query = "INSERT INTO " + tableName + " (" + fields_string + ") VALUES (" + item_values + ")"
     cursor.execute(query)
     print("New item added to " + tableName + " table.")
+
+    # Return the updated flight table
     print("The updated Flight table is below.")
     printTable("Flight")
 
+# Get an integer input by the user
 def get_integer(message):
     done = False
     while not done:
@@ -283,24 +272,34 @@ def get_integer(message):
             print("Input is not valid. Input must be an intger. Please Try Again")
             
 
-# Creation
+# Add a new pilot entry into the Pilot Table
 def add_pilot():
+    # Print current table
     print("The current Pilot table is below.")
     printTable("Pilot")
+
+    # Get field values of new pilot
     pilot_name = input("Please enter the new pilot's full name : ")
     pilot_age = get_integer("Please select the new pilot's age : ")
     pilot_experience = get_integer("Please slect the new pilot's flight time experience in hours : ")
+    
+    # Add new pilot to the pilot table
     query = "INSERT INTO Pilot (Pilot_Name, Pilot_Age, Flight_Experience) VALUES ('" + pilot_name + "', " + pilot_age + ", " + pilot_experience + ")"
     cursor.execute(query)
+    
+    # Print the updated table
     print("The updated Pilot table is below.")
     printTable("Pilot")
     print("Pilot added")
 
-# Read
+# View flights by filtering the Flight table
 def view_flight():
+    # Get the field names of the Flight table
     fields = get_fields("Flight", False)[1:]
     print("You may select flight by a range of fields:")
     print("Please select the field you wish to filter flights by")
+
+    # User selects a field to filter by
     chosenField = select_option("Field", fields, "element")
     print("Flight Viewed")
     print("Please select the " + chosenField + " value of the Flights you wish to view")
@@ -320,14 +319,35 @@ def view_flight():
         case "Plane_ID":
             tableName = "Plane"
     printTable(tableName)
+
+    # User select the value to filter field by
     query = "SELECT " + tableName + "_ID FROM " + tableName
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     choice = select_option(chosenField, options, "element")
-     
-    print("Here are the flights with " + chosenField + " equal to " + choice)
 
-    query = "SELECT * FROM Flight WHERE " + chosenField + " = " + choice
+    # Filtered flight table is returned with joins for useful info, more readable than ids 
+    print("Here are the flights with " + chosenField + " equal to " + choice)
+    query ="""
+    SELECT
+        Flight.Flight_ID,
+        Origin_Airport.Airport_Name AS Origin_Airport,
+        Destination_Airport.Airport_Name AS Destination_Airport,
+        Departure_Schedule.Planned_Datetime AS Departure_Time,
+        Arrival_Schedule.Planned_Datetime AS Arrival_Time,
+        Pilot.Pilot_Name AS Pilot,
+        Plane.Plane_Name AS Plane
+    FROM
+        Flight
+    INNER JOIN Airport AS Origin_Airport ON Flight.Origin_Airport_ID = Origin_Airport.Airport_ID
+    INNER JOIN Airport AS Destination_Airport ON Flight.Destination_Airport_ID = Destination_Airport.Airport_ID
+    INNER JOIN Schedule AS Departure_Schedule ON Flight.Departure_Schedule_ID = Departure_Schedule.Schedule_ID
+    INNER JOIN Schedule AS Arrival_Schedule ON Flight.Arrival_Schedule_ID = Arrival_Schedule.Schedule_ID
+    INNER JOIN Pilot ON Flight.Pilot_ID = Pilot.Pilot_ID
+    INNER JOIN Plane ON Flight.Plane_ID = Plane.Plane_ID
+    WHERE """
+    query_filter = chosenField + " = " + choice
+    query += query_filter
     cursor.execute(query)
     rows = [list(row) for row in cursor.fetchall()]
     headings = [descriptions[0] for descriptions in cursor.description]
@@ -335,15 +355,20 @@ def view_flight():
     print2dArray(table, "Flights with " + chosenField + " equal to " + choice)
 
 
-# Read
+# View Pilot Schedule
 def view_pilot_schedule():
+    # Print Current pilot table
     print("This is the current Pilot table")
     printTable("Pilot")
+
+    # Select pilot to view schedule of
     print("Please select the Pilot ID of the Pilot whose schedule you want to view")
     query = "SELECT DISTINCT Pilot_ID FROM Pilot"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     chosen_pilot = select_option("Pilot ID", options, "element")
+    
+    # Print the arrival schedules of the pilot
     query = "SELECT DISTINCT Arrival_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
     cursor.execute(query)
     schedule_ids = [row[0] for row in cursor.fetchall()]
@@ -356,6 +381,7 @@ def view_pilot_schedule():
         table = [headings] + rows
         print2dArray(table, "Pilot Flight Arrival Schedule " + str(id))
 
+    # Print the departure schedules of the pilot
     query = "SELECT DISTINCT Departure_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
     cursor.execute(query)
     schedule_ids = [row[0] for row in cursor.fetchall()]
@@ -368,28 +394,30 @@ def view_pilot_schedule():
         table = [headings] + rows
         print2dArray(table, "Pilot Flight Departure Schedule " + str(id))
 
-    
-
-# Read
+# Function to view a table in the databse
 def view_table():
     tableSelected = select_option("Table", tableNames, "element")
     printTable(tableSelected)
 
-# Update
+# Update a pilot entry in the Pilot Table
 def update_pilot():
+    # Print the current Pilot Table
     print("This is the current Pilot table")
     printTable("Pilot")
 
+    # Select a pilot to update
     print("Please select the Pilot ID of the Pilot you wish to update")
     query = "SELECT DISTINCT Pilot_ID FROM Pilot"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     id = select_option("Pilot ID", options, "element")
 
+    # Select a field to update
     print("Please select the field of the pilot you wish to update")
-    fields = get_fields("Pilot", False)[1:]
-    chosenField = select_option("Pilot field", fields, "element")
+    pilot_fields = get_fields("Pilot", False)[1:]
+    chosenField = select_option("Pilot field", pilot_fields, "element")
 
+    # Get value from user to update pilot field
     print("Please enter the " + chosenField + " value that you to set")
     value = ""
     match chosenField:
@@ -397,66 +425,83 @@ def update_pilot():
             value = input("Please enter the new pilot's full name : ")
         case "Pilot_Age":
             value = get_integer("Please select the new pilot's age : ")
-        case "value":
-            pilot_experience = get_integer("Please slect the new pilot's flight time experience in hours : ")
-    query = "UPDATE Pilot SET " + chosenField + " = " + value + " WHERE Pilot_ID = " + id
+        case "Flight_Experience":
+            value = get_integer("Please select the new pilot's flight time experience in hours : ")
 
+    # Update the pilot field
+    query = "UPDATE Pilot SET " + chosenField + " = '" + value + "' WHERE Pilot_ID = " + id
+    cursor.execute(query)
+
+    # Return the updated pilot table
     print("This is the updated Pilot table")
     printTable("Pilot")
-
     print("Pilot Updated")
 
-# Update
-def update_destination():
-    print("Destination Information Updated")
-
-# Deletion
+# Remove a pilot in the database
 def remove_pilot():
+    # Print current pilot table
     print("This is the current Pilot table")
     printTable("Pilot")
+
+    # Select a pilot to remove
     print("Please select the Pilot ID of the Pilot you wish to remove")
     query = "SELECT DISTINCT Pilot_ID FROM Pilot"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     id_to_delete = select_option("Pilot ID", options, "element")
+
+    # Delete the pilot
     query = "DELETE FROM Pilot WHERE Pilot_ID = " + id_to_delete
     cursor.execute(query)
+
+    # Delete any flights with the pilot, flight cannot have no pilot
     query = "DELETE FROM Flight WHERE Pilot_ID = " + id_to_delete
     cursor.execute(query)
+
+    # Return the update pilot table
     print("This is the updated Pilot table after a row was deleted")
     printTable("Pilot")
 
-# Deletion
+# Delete a flight from the flight table
 def remove_flight():
+    # Print the current flight table
     print("This is the current Flight table")
     printTable("Flight")
     print("Please select the Flight ID of the Flight you wish to remove")
+
+    # Select a flight to remove
     query = "SELECT DISTINCT Flight_ID FROM Flight"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     id_to_delete = select_option("Flight ID", options, "element")
+
+    # Remove the flight
     query = "DELETE FROM Flight WHERE Flight_ID = " + id_to_delete
     cursor.execute(query)
+
+    # Print the updated flight table
     print("This is the updated Flight table after a row was deleted")
     printTable("Flight")
-    
+
+# View all tables in the database
 def view_all_tables():
     for table in tableNames:
         printTable(table)
 
+# Database application introduction
 print("Welcome to the Flight Management Database Application.")
 print("The database has been reset and filled with example data.")
-
 print("All the tables in this database are shown below.")
 view_all_tables()
-
 print("You many perform various CRUD operation on this data using the actions available in the Actions Menu")
 
-
-
+# Available actions list
 actions = ["(Create) Add a new flight", "(Create) Add a new pilot", "(Read) View flight information", "(Read) View pilot schedule", "(Read) View table", "(Update) Update Pilot information", "(Delete) Remove pilot", "(Delete) Remove flight", "(View) View all tables"]
 tables = []
 
+runApplication = True
+
+# Run Menu
 while runApplication:
     print("\n-----------------------------------------")
     menuChoice = select_option("Action", actions, "index")
@@ -474,12 +519,13 @@ while runApplication:
             view_table() #done
         case 6:
             update_pilot() #done
-        case 8:
+        case 7:
             remove_pilot() #done
-        case 9:
+        case 8:
             remove_flight() #done
-        case 10:
+        case 9:
             view_all_tables() #done
 
+# End application
 cursor.close()
 conn.close()
