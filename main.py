@@ -229,7 +229,7 @@ def add_flight():
     # Get a choice of for each field
     for field in fields:
         print(field)
-        query = "SELECT DISTINCT " + field + " FROM " + tableName
+        query = "SELECT " + field + " FROM " + tableName
         cursor.execute(query)
         options = [row[0] for row in cursor.fetchall()]
         match field:
@@ -252,7 +252,7 @@ def add_flight():
     print("Item to Add: " + str(item))
     fields_string = ", ".join(fields)
     item_values = ", ".join(item)
-    query = "INSERT INTO " + tableName + " (" + fields_string + ") VALUES (" + item_values + ")"
+    query = "INSERT INTO FLIGHT (" + fields_string + ") VALUES (" + item_values + ")"
     cursor.execute(query)
     print("New item added to " + tableName + " table.")
 
@@ -363,13 +363,13 @@ def view_pilot_schedule():
 
     # Select pilot to view schedule of
     print("Please select the Pilot ID of the Pilot whose schedule you want to view")
-    query = "SELECT DISTINCT Pilot_ID FROM Pilot"
+    query = "SELECT Pilot_ID FROM Pilot"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     chosen_pilot = select_option("Pilot ID", options, "element")
     
     # Print the arrival schedules of the pilot
-    query = "SELECT DISTINCT Arrival_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
+    query = "SELECT Arrival_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
     cursor.execute(query)
     schedule_ids = [row[0] for row in cursor.fetchall()]
     print("Here all the Arrival Schedules of the Pilot with Pilot ID = " + chosen_pilot)
@@ -382,7 +382,7 @@ def view_pilot_schedule():
         print2dArray(table, "Pilot Flight Arrival Schedule " + str(id))
 
     # Print the departure schedules of the pilot
-    query = "SELECT DISTINCT Departure_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
+    query = "SELECT  Departure_Schedule_ID FROM Flight WHERE Pilot_ID = " + chosen_pilot
     cursor.execute(query)
     schedule_ids = [row[0] for row in cursor.fetchall()]
     print("Here all the Departure Schedules of the Pilot with Pilot ID = " + chosen_pilot)
@@ -407,7 +407,7 @@ def update_pilot():
 
     # Select a pilot to update
     print("Please select the Pilot ID of the Pilot you wish to update")
-    query = "SELECT DISTINCT Pilot_ID FROM Pilot"
+    query = "SELECT Pilot_ID FROM Pilot"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     id = select_option("Pilot ID", options, "element")
@@ -445,7 +445,7 @@ def remove_pilot():
 
     # Select a pilot to remove
     print("Please select the Pilot ID of the Pilot you wish to remove")
-    query = "SELECT DISTINCT Pilot_ID FROM Pilot"
+    query = "SELECT Pilot_ID FROM Pilot"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     id_to_delete = select_option("Pilot ID", options, "element")
@@ -470,7 +470,7 @@ def remove_flight():
     print("Please select the Flight ID of the Flight you wish to remove")
 
     # Select a flight to remove
-    query = "SELECT DISTINCT Flight_ID FROM Flight"
+    query = "SELECT Flight_ID FROM Flight"
     cursor.execute(query)
     options = [row[0] for row in cursor.fetchall()]
     id_to_delete = select_option("Flight ID", options, "element")
